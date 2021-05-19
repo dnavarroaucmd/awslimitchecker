@@ -53,11 +53,13 @@ class PagerDutyV1(AlertProvider):
     Alert provider to send notifications to PagerDuty via the Events API V1.
     """
 
-    pd_url = 'https://events.pagerduty.com/generic/2010-04-15/create_event.json'
+    pd_url = 'https://events.pagerduty.com/v2/enqueue'
+    pd_routing_key=os.environ.get('PAGERDUTY_ROUTING_KEY', None)
 
     def __init__(
-        self, region_name, account_alias=None, critical_service_key=None,
-        warning_service_key=None, incident_key=None
+        self, region_name, critical_service_key=pd_routing_key,
+        warning_service_key=pd_routing_key, incident_key=None,
+        account_alias=os.environ.get('AWS_PROFILE', None)
     ):
         """
         Initialize PagerDutyV1 alert provider.
@@ -69,11 +71,11 @@ class PagerDutyV1(AlertProvider):
           incident_key and description.
         :param critical_service_key: **Required**; the PagerDuty Integration
           Key for sending Critical events. Can also be specified via the
-          ``PAGERDUTY_SERVICE_KEY_CRIT`` environment variable.
+          ``PAGERDUTY_ROUTING_KEY`` environment variable.
         :type critical_service_key: str
         :param warning_service_key: **Required**; the PagerDuty Integration
           Key for sending Warning events. Can also be specified via the
-          ``PAGERDUTY_SERVICE_KEY_WARN`` environment variable. If omitted,
+          ``PAGERDUTY_ROUTING_KEY`` environment variable. If omitted,
           alerts will not be sent for warnings.
         :type warning_service_key: str
         :param incident_key: Optional; the PagerDuty incident/routing key to
@@ -87,18 +89,18 @@ class PagerDutyV1(AlertProvider):
         """
         super(PagerDutyV1, self).__init__(region_name)
         self._service_key_crit = os.environ.get(
-            'PAGERDUTY_SERVICE_KEY_CRIT', None
+            'PAGERDUTY_ROUTING_KEY', None
         )
         if critical_service_key is not None:
             self._service_key_crit = critical_service_key
         if self._service_key_crit is None:
             raise RuntimeError(
                 'ERROR: PagerDutyV1 alert provider requires '
-                'critical_service_key parameter or PAGERDUTY_SERVICE_KEY_CRIT '
+                'critical_service_key parameter or PAGERDUTY_ROUTING_KEY '
                 'environment variable.'
             )
         self._service_key_warn = os.environ.get(
-            'PAGERDUTY_SERVICE_KEY_WARN', None
+            'PAGERDUTY_ROUTING_KEY', None
         )
         if warning_service_key is not None:
             self._service_key_warn = warning_service_key
@@ -131,7 +133,7 @@ class PagerDutyV1(AlertProvider):
             headers={'Content-type': 'application/json'},
             body=encoded
         )
-        if resp.status == 200:
+        if resp.status == 202:
             logger.debug(
                 'Successfully POSTed to PagerDuty; HTTP %d: %s',
                 resp.status, resp.data
@@ -151,14 +153,19 @@ class PagerDutyV1(AlertProvider):
         :rtype: dict
         """
         d = {
-            'incident_key': self._incident_key,
-            'details': {
-                'region': self._region_name
+            'payload': {
+                'summary': '',
+                'source': 'AWS Limit Check in ' + self._region_name,
+                'severity': 'info',
+                'custom_details': {
+                    'region': self._region_name,
+                    'account': self._account_alias,
+                },
             },
+            'routing_key': os.environ.get('PAGERDUTY_ROUTING_KEY', None),
+            'incident_key': self._incident_key,
             'client': 'awslimitchecker'
         }
-        if self._account_alias is not None:
-            d['details']['account_alias'] = self._account_alias
         return d
 
     def on_success(self, duration=None):
@@ -171,14 +178,15 @@ class PagerDutyV1(AlertProvider):
         :type duration: float
         """
         data = self._event_dict()
-        data['event_type'] = 'resolve'
+        data['payload']['summary'] = 'AWS Limit Check Success'
+        data['event_action'] = 'resolve'
         data['description'] = 'awslimitchecker in '
         if self._account_alias is not None:
             data['description'] += self._account_alias + ' '
         data['description'] += self._region_name + ' found no problems'
         if duration:
             data['description'] += '; run completed in %.2f seconds' % duration
-            data['details']['duration_seconds'] = duration
+            data['payload']['custom_details']['duration_seconds'] = duration
         self._send_event(self._service_key_crit, data)
         if self._service_key_warn is not None:
             self._send_event(self._service_key_warn, data)
@@ -233,24 +241,25 @@ class PagerDutyV1(AlertProvider):
         :type duration: float
         """
         data = self._event_dict()
-        data['event_type'] = 'trigger'
+        data['payload']['summary'] = 'AWS Limit Check Critical'
+        data['event_action'] = 'trigger'
         data['description'] = 'awslimitchecker in '
         if self._account_alias is not None:
             data['description'] += self._account_alias + ' '
         data['description'] += self._region_name
         if duration:
             data['description'] += ' ran in %.2f seconds and' % duration
-            data['details']['duration_seconds'] = duration
+            data['payload']['custom_details']['duration_seconds'] = duration
         if exc is not None:
             data['description'] += ' failed with an exception:' \
                                    ' %s' % exc.__repr__()
-            data['details']['exception'] = exc.__repr__()
+            data['payload']['custom_details']['exception'] = exc.__repr__()
         else:
             w_count, c_count, pdict = self._problems_dict(problems)
             data['description'] += ' crossed %d CRITICAL thresholds' % c_count
             if w_count > 0:
                 data['description'] += ' and %d WARNING thresholds' % w_count
-            data['details']['limits'] = pdict
+            data['payload']['custom_details']['limits'] = pdict
         self._send_event(self._service_key_crit, data)
 
     def on_warning(self, problems, problem_str, duration=None):
@@ -269,15 +278,16 @@ class PagerDutyV1(AlertProvider):
         :type duration: float
         """
         data = self._event_dict()
-        data['event_type'] = 'trigger'
+        data['payload']['summary'] = 'AWS Limit Check Warning'
+        data['event_action'] = 'trigger'
         data['description'] = 'awslimitchecker in '
         if self._account_alias is not None:
             data['description'] += self._account_alias + ' '
         data['description'] += self._region_name
         if duration:
             data['description'] += ' ran in %.2f seconds and' % duration
-            data['details']['duration_seconds'] = duration
+            data['payload']['custom_details']['duration_seconds'] = duration
         w_count, _, pdict = self._problems_dict(problems)
         data['description'] += ' crossed %d WARNING thresholds' % w_count
-        data['details']['limits'] = pdict
+        data['payload']['custom_details']['limits'] = pdict
         self._send_event(self._service_key_warn, data)
