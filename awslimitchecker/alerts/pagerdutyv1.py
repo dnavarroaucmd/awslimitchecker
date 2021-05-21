@@ -59,7 +59,7 @@ class PagerDutyV1(AlertProvider):
     def __init__(
         self, region_name, critical_service_key=pd_routing_key,
         warning_service_key=pd_routing_key, incident_key=None,
-        account_alias=os.environ.get('AWS_PROFILE', None)
+        account_alias=os.environ.get('AWS_ACCOUNT_ALIAS', None)
     ):
         """
         Initialize PagerDutyV1 alert provider.
