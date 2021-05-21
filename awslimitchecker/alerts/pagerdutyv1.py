@@ -178,7 +178,7 @@ class PagerDutyV1(AlertProvider):
         :type duration: float
         """
         data = self._event_dict()
-        data['payload']['summary'] = 'AWS Limit Check Success ' + self._account_alias +' '+ self._region_name
+        data['payload']['summary'] = 'AWS Limit Check Success ' + self._account_alias + ' ' + self._region_name
         data['event_action'] = 'resolve'
         data['description'] = 'awslimitchecker in '
         if self._account_alias is not None:
@@ -241,7 +241,7 @@ class PagerDutyV1(AlertProvider):
         :type duration: float
         """
         data = self._event_dict()
-        data['payload']['summary'] = 'AWS Limit Check Critical ' + self._account_alias +' '+ self._region_name
+        data['payload']['summary'] = 'AWS Limit Check Critical ' + self._account_alias + ' ' + self._region_name
         data['event_action'] = 'trigger'
         data['description'] = 'awslimitchecker in '
         if self._account_alias is not None:
@@ -278,7 +278,7 @@ class PagerDutyV1(AlertProvider):
         :type duration: float
         """
         data = self._event_dict()
-        data['payload']['summary'] = 'AWS Limit Check Warning ' + self._account_alias +' '+ self._region_name
+        data['payload']['summary'] = 'AWS Limit Check Warning ' + self._account_alias + ' ' + self._region_name
         data['event_action'] = 'trigger'
         data['description'] = 'awslimitchecker in '
         if self._account_alias is not None:
