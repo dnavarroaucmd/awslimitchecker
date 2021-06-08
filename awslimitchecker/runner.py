@@ -538,9 +538,8 @@ class Runner(object):
                 alerter.on_warning(
                     problems, problem_str, duration=time.time() - start_time
                 )
-            ### Disable Alerting on Success
-            # else:
-            #     alerter.on_success(duration=time.time() - start_time)
+            else:
+                alerter.on_success(duration=time.time() - start_time)
             # with alert provider, always exit zero
             raise SystemExit(0)
         raise SystemExit(res)
