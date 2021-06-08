@@ -61,21 +61,19 @@ class Dummy(AlertProvider):
         :type region_name: str
         """
         super(Dummy, self).__init__(region_name)
-
-    ### Disable Alerting on Success
     
-    # def on_success(self, duration=None):
-    #     """
-    #     Method called when no thresholds were breached, and run completed
-    #     successfully. Should resolve any open incidents (if the service supports
-    #     that functionality) or else simply return.
+    def on_success(self, duration=None):
+        """
+        Method called when no thresholds were breached, and run completed
+        successfully. Should resolve any open incidents (if the service supports
+        that functionality) or else simply return.
 
-    #     :param duration: duration of the usage/threshold checking run
-    #     :type duration: float
-    #     """
-    #     print('awslimitchecker in %s found no problems' % self._region_name)
-    #     if duration:
-    #         print('awslimitchecker run duration: %s' % duration)
+        :param duration: duration of the usage/threshold checking run
+        :type duration: float
+        """
+        print('awslimitchecker in %s found no problems' % self._region_name)
+        if duration:
+            print('awslimitchecker run duration: %s' % duration)
 
     def on_critical(self, problems, problem_str, exc=None, duration=None):
         """

@@ -59,20 +59,18 @@ class AlertProvider(object):
         :type region_name: str
         """
         self._region_name = region_name
-
-    ### Disable Alerting on Success
     
-    # @abstractmethod
-    # def on_success(self, duration=None):
-    #     """
-    #     Method called when no thresholds were breached, and run completed
-    #     successfully. Should resolve any open incidents (if the service supports
-    #     that functionality) or else simply return.
+    @abstractmethod
+    def on_success(self, duration=None):
+        """
+        Method called when no thresholds were breached, and run completed
+        successfully. Should resolve any open incidents (if the service supports
+        that functionality) or else simply return.
 
-    #     :param duration: duration of the usage/threshold checking run
-    #     :type duration: float
-    #     """
-    #     raise NotImplementedError()
+        :param duration: duration of the usage/threshold checking run
+        :type duration: float
+        """
+        raise NotImplementedError()
 
     @abstractmethod
     def on_critical(self, problems, problem_str, exc=None, duration=None):
