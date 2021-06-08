@@ -168,28 +168,30 @@ class PagerDutyV1(AlertProvider):
         }
         return d
 
-    def on_success(self, duration=None):
-        """
-        Method called when no thresholds were breached, and run completed
-        successfully. Should resolve any open incidents (if the service supports
-        that functionality) or else simply return.
+    ### Disable Alerting on Success
+    
+    # def on_success(self, duration=None):
+    #     """
+    #     Method called when no thresholds were breached, and run completed
+    #     successfully. Should resolve any open incidents (if the service supports
+    #     that functionality) or else simply return.
 
-        :param duration: duration of the usage/threshold checking run
-        :type duration: float
-        """
-        data = self._event_dict()
-        data['payload']['summary'] = 'AWS Limit Check Success ' + self._account_alias + ' ' + self._region_name
-        data['event_action'] = 'resolve'
-        data['description'] = 'awslimitchecker in '
-        if self._account_alias is not None:
-            data['description'] += self._account_alias + ' '
-        data['description'] += self._region_name + ' found no problems'
-        if duration:
-            data['description'] += '; run completed in %.2f seconds' % duration
-            data['payload']['custom_details']['duration_seconds'] = duration
-        self._send_event(self._service_key_crit, data)
-        if self._service_key_warn is not None:
-            self._send_event(self._service_key_warn, data)
+    #     :param duration: duration of the usage/threshold checking run
+    #     :type duration: float
+    #     """
+    #     data = self._event_dict()
+    #     data['payload']['summary'] = 'AWS Limit Check Success ' + self._account_alias + ' ' + self._region_name
+    #     data['event_action'] = 'resolve'
+    #     data['description'] = 'awslimitchecker in '
+    #     if self._account_alias is not None:
+    #         data['description'] += self._account_alias + ' '
+    #     data['description'] += self._region_name + ' found no problems'
+    #     if duration:
+    #         data['description'] += '; run completed in %.2f seconds' % duration
+    #         data['payload']['custom_details']['duration_seconds'] = duration
+    #     self._send_event(self._service_key_crit, data)
+    #     if self._service_key_warn is not None:
+    #         self._send_event(self._service_key_warn, data)
 
     def _problems_dict(self, problems):
         """
