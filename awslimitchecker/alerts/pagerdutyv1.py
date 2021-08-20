@@ -163,7 +163,7 @@ class PagerDutyV1(AlertProvider):
                 },
             },
             'routing_key': os.environ.get('PAGERDUTY_ROUTING_KEY', None),
-            'dedup_key': 'awslimitchecker-{account_alias}-{region_name}',
+            'dedup_key': self._incident_key,
             'incident_key': self._incident_key,
             'client': 'awslimitchecker'
         }
